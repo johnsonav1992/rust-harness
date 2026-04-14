@@ -40,11 +40,14 @@ Set `GEMINI_API_KEY` in `.env`.
 cargo run --
 ```
 
+The harness auto-detects the project root by walking up from the launch directory until it finds `.git` or `Cargo.toml`. So if you launch it from `src/`, it still uses the repo root as the workspace.
+
 Optional flags:
 
 ```bash
 cargo run -- --model gemini-2.5-flash
 cargo run -- --reasoning-effort low
+cargo run -- --workspace-root /Users/Alex/Desktop
 cargo run -- --no-color
 ```
 

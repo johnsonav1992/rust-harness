@@ -800,15 +800,48 @@ fn spinner(message: &str) -> ProgressBar {
     spinner
 }
 
+fn determine_workspace_root(explicit_root: Option<PathBuf>) -> Result<PathBuf> {
+    if let Some(path) = explicit_root {
+        return canonicalize_workspace_root(path);
+    }
+
+    let current_dir = env::current_dir().context("failed to get current working directory")?;
+
+    if let Some(root) = find_project_root(&current_dir) {
+        return Ok(root);
+    }
+
+    canonicalize_workspace_root(current_dir)
+}
+
+fn canonicalize_workspace_root(path: PathBuf) -> Result<PathBuf> {
+    path.canonicalize()
+        .with_context(|| format!("failed to canonicalize workspace root {}", path.display()))
+}
+
+fn find_project_root(start: &Path) -> Option<PathBuf> {
+    for candidate in start.ancestors() {
+        if candidate.join(".git").exists() || candidate.join("Cargo.toml").exists() {
+            if let Ok(canonical) = candidate.canonicalize() {
+                return Some(canonical);
+            }
+        }
+    }
+    None
+}
+
 fn print_cli_help() {
     println!("rust-harness {}", env!("CARGO_PKG_VERSION"));
     println!();
     println!("Usage:");
-    println!("  cargo run -- [--model MODEL] [--reasoning-effort LEVEL] [--no-color]");
+    println!(
+        "  cargo run -- [--model MODEL] [--reasoning-effort LEVEL] [--workspace-root PATH] [--no-color]"
+    );
     println!();
     println!("Options:");
     println!("  --model MODEL                Gemini model to use");
     println!("  --reasoning-effort LEVEL     Gemini reasoning effort");
+    println!("  --workspace-root PATH        Override the detected workspace root");
     println!("  --no-color                   Disable ANSI colors");
     println!("  -h, --help                   Show this help");
     println!("  -V, --version                Show the version");
